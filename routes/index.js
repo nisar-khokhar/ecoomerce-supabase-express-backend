@@ -29,4 +29,11 @@ router.get("/test-db", async (req, res) => {
   });
 });
 
+router.get("/health", (req, res) => {
+  res.json({
+    success: true,
+    message: "API is healthy",
+  });
+});
+
 module.exports = router;
