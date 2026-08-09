@@ -37,6 +37,7 @@ const wishlistRoutes = require("./routes/wishlist.routes");
 const variantTypeRoutes = require("./routes/variantType.routes");
 const variantValueRoutes = require("./routes/variantValue.routes");
 const productVariantRoutes = require("./routes/productVariant.routes");
+const cartRoutes = require("./routes/cart.routes");
 
 var app = express();
 
@@ -81,6 +82,7 @@ app.use("/api/wishlist", wishlistRoutes);
 app.use("/api/variant-types", variantTypeRoutes);
 app.use("/api/variant-values", variantValueRoutes);
 app.use("/api/product-variants", productVariantRoutes);
+app.use("/api/cart", cartRoutes);
 
 // catch 404 and forward to error handler
 app.use(errorHandler);
