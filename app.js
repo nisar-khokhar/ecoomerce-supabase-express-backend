@@ -30,6 +30,9 @@ var indexRouter = require("./routes/index");
 const categoryRoutes = require("./routes/category.routes");
 const brandRoutes = require("./routes/brand.routes");
 const productRoutes = require("./routes/product.routes");
+const authRouter = require("./routes/auth.routes");
+const userRoutes = require("./routes/user.routes");
+const addressRoutes = require("./routes/address.routes");
 
 var app = express();
 
@@ -67,6 +70,9 @@ app.use("/", indexRouter);
 app.use("/api/categories", categoryRoutes);
 app.use("/api/brands", brandRoutes);
 app.use("/api/products", productRoutes);
+app.use("/api/auth", authRouter);
+app.use("/api/users", userRoutes);
+app.use("/api/addresses", addressRoutes);
 
 // catch 404 and forward to error handler
 app.use(errorHandler);
