@@ -3,8 +3,9 @@ const {
   applySorting,
   applyPagination,
 } = require("../helpers/productQueryBuilder");
-
 const supabase = require("../config/supabase");
+const { formatProduct } = require("../utils/productFormatter");
+const { createProductVariant } = require("./productVariant.service");
 
 const getAllProducts = async (options) => {
   const { pagination = {}, filters = {}, sorting = {} } = options;
@@ -25,8 +26,10 @@ const getAllProducts = async (options) => {
 
   const totalPages = Math.ceil(count / limit);
 
+  const formattedProducts = data.map((data) => formatProduct(data));
+
   return {
-    products: data,
+    products: formattedProducts,
     pagination: {
       page,
       limit,
@@ -43,10 +46,10 @@ const getProductById = async (id) => {
 
   product.product_images = await getProductImages(id);
 
-  return product;
+  return formatProduct(product);
 };
 
-const createProduct = async (productData) => {
+const createProductRecord = async (productData) => {
   const { data, error } = await supabase
     .from("products")
     .insert(productData)
@@ -54,13 +57,41 @@ const createProduct = async (productData) => {
     .single();
 
   if (error) {
+    // in development, we can log the error for debugging purposes
+    console.error("Error creating product:", error);
     throw new Error("Unable to create product.");
   }
 
   return data;
 };
 
-const updateProduct = async (id, productData) => {
+// TODO:
+// Wrap product creation, variant creation, and image creation
+// in a PostgreSQL transaction (RPC) to ensure atomicity.
+
+const createProduct = async (productData) => {
+  const { variants, ...productFields } = productData;
+
+  // Create product
+  const product = await createProductRecord(productFields);
+
+  // Create every variant
+  await Promise.all(
+    variants.map((variant) =>
+      createProductVariant({
+        ...variant,
+        product_id: product.id,
+      }),
+    ),
+  );
+
+  // Fetch complete product
+  const createdProduct = await getProductById(product.id);
+
+  return formatProduct(createdProduct);
+};
+
+const updateProductRecord = async (id, productData) => {
   const { data, error } = await supabase
     .from("products")
     .update(productData)
@@ -75,6 +106,19 @@ const updateProduct = async (id, productData) => {
   return data;
 };
 
+const updateProduct = async (id, productData) => {
+  // Ensure product exists
+  await getProduct(id);
+
+  // Update only product fields
+  await updateProductRecord(id, productData);
+
+  // Fetch complete updated product
+  const updatedProduct = await getProductById(id);
+
+  return formatProduct(updatedProduct);
+};
+
 const deleteProduct = async (id) => {
   const { error } = await supabase.from("products").delete().eq("id", id);
 
@@ -83,12 +127,69 @@ const deleteProduct = async (id) => {
   }
 };
 
+const validateProductAvailability = async (productId) => {
+  const { data, error } = await supabase
+    .from("products")
+    .select(
+      `
+      id,
+      name,
+      slug,
+      price,
+      quantity,
+      is_active
+      `,
+    )
+    .eq("id", productId)
+    .maybeSingle();
+
+  if (error) {
+    throw new Error("Unable to fetch product.");
+  }
+
+  if (!data) {
+    throw new Error("Product not found.");
+  }
+
+  if (!data.is_active) {
+    throw new Error("Product is unavailable.");
+  }
+
+  return data;
+};
+
+const validateProductIsActive = async (productId) => {
+  const { data, error } = await supabase
+    .from("products")
+    .select("id, is_active")
+    .eq("id", productId)
+    .maybeSingle();
+
+  if (error) {
+    throw new Error("Unable to fetch product.");
+  }
+
+  if (!data) {
+    throw new Error("Product not found.");
+  }
+
+  if (!data.is_active) {
+    throw new Error("Product is unavailable.");
+  }
+
+  return data;
+};
+
 module.exports = {
   getAllProducts,
   getProductById,
   createProduct,
   updateProduct,
   deleteProduct,
+
+  // Shared helper
+  validateProductAvailability,
+  validateProductIsActive,
 };
 
 /**
@@ -105,7 +206,30 @@ const getProduct = async (id) => {
       `
       *,
       categories(id, name, slug),
-      brands(id, name, slug)
+      brands(id, name, slug),
+      product_variants(
+        id,
+        sku,
+        barcode,
+        price,
+        compare_price,
+        quantity,
+        weight,
+        track_inventory,
+        is_active,
+
+        product_variant_values(
+          variant_values(
+            id,
+            value_code,
+            label,
+            variant_types(
+              id,
+              name
+            )
+          )
+        )
+      )
     `,
     )
     .eq("id", id)
@@ -145,16 +269,48 @@ const buildProductsQuery = () => {
   return supabase.from("products").select(
     `
       *,
-      categories(id, name, slug),
-      brands(id, name, slug),
+      categories(
+        id,
+        name,
+        slug
+      ),
+      brands(
+        id,
+        name,
+        slug
+      ),
       product_images(
         id,
         image_path,
         alt_text,
         sort_order,
         is_primary
+      ),
+      product_variants(
+        id,
+        sku,
+        barcode,
+        price,
+        compare_price,
+        quantity,
+        weight,
+        track_inventory,
+        is_active,
+
+        product_variant_values(
+          variant_values(
+            id,
+            value_code,
+            label,
+
+            variant_types(
+              id,
+              name
+            )
+          )
+        )
       )
-      `,
+    `,
     { count: "exact" },
   );
 };

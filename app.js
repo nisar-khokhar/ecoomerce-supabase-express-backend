@@ -33,6 +33,10 @@ const productRoutes = require("./routes/product.routes");
 const authRouter = require("./routes/auth.routes");
 const userRoutes = require("./routes/user.routes");
 const addressRoutes = require("./routes/address.routes");
+const wishlistRoutes = require("./routes/wishlist.routes");
+const variantTypeRoutes = require("./routes/variantType.routes");
+const variantValueRoutes = require("./routes/variantValue.routes");
+const productVariantRoutes = require("./routes/productVariant.routes");
 
 var app = express();
 
@@ -73,6 +77,10 @@ app.use("/api/products", productRoutes);
 app.use("/api/auth", authRouter);
 app.use("/api/users", userRoutes);
 app.use("/api/addresses", addressRoutes);
+app.use("/api/wishlist", wishlistRoutes);
+app.use("/api/variant-types", variantTypeRoutes);
+app.use("/api/variant-values", variantValueRoutes);
+app.use("/api/product-variants", productVariantRoutes);
 
 // catch 404 and forward to error handler
 app.use(errorHandler);

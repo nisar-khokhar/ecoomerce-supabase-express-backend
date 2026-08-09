@@ -1,44 +1,69 @@
 const { z } = require("zod");
+const { productVariantFieldsSchema } = require("./productVariant.validator");
+
+// const createProductSchema = z.object({
+//   body: z
+//     .object({
+//       category_id: z.coerce.number().int().positive(),
+
+//       brand_id: z.coerce.number().int().positive(),
+
+//       name: z
+//         .string()
+//         .trim()
+//         .min(3, "Product name must be at least 3 characters.")
+//         .max(255),
+
+//       slug: z.string().trim().min(3).max(255),
+
+//       short_description: z.string().optional(),
+
+//       description: z.string().optional(),
+
+//       is_active: z.boolean().optional(),
+
+//       is_featured: z.boolean().optional(),
+
+//       variants: z
+//         .array(productVariantBodySchema)
+//         .min(1, "At least one product variant is required."),
+//     })
+//     .refine(
+//       (data) =>
+//         data.compare_price === undefined || data.compare_price >= data.price,
+//       {
+//         message: "Compare price must be greater than or equal to price.",
+//         path: ["compare_price"],
+//       },
+//     ),
+// });
 
 const createProductSchema = z.object({
-  body: z
-    .object({
-      category_id: z.coerce.number().int().positive(),
+  body: z.object({
+    category_id: z.coerce.number().int().positive(),
 
-      brand_id: z.coerce.number().int().positive(),
+    brand_id: z.coerce.number().int().positive(),
 
-      name: z
-        .string()
-        .trim()
-        .min(3, "Product name must be at least 3 characters.")
-        .max(255),
+    name: z
+      .string()
+      .trim()
+      .min(3, "Product name must be at least 3 characters.")
+      .max(255),
 
-      slug: z.string().trim().min(3).max(255),
+    slug: z.string().trim().min(3).max(255),
 
-      sku: z.string().trim().min(3).max(100),
+    short_description: z.string().optional(),
 
-      short_description: z.string().optional(),
+    description: z.string().optional(),
 
-      description: z.string().optional(),
+    is_active: z.boolean().optional(),
 
-      price: z.coerce.number().positive(),
+    is_featured: z.boolean().optional(),
 
-      compare_price: z.coerce.number().positive().optional(),
-
-      quantity: z.coerce.number().int().min(0),
-
-      is_active: z.boolean().optional(),
-
-      is_featured: z.boolean().optional(),
-    })
-    .refine(
-      (data) =>
-        data.compare_price === undefined || data.compare_price >= data.price,
-      {
-        message: "Compare price must be greater than or equal to price.",
-        path: ["compare_price"],
-      },
-    ),
+    variants: z
+      .array(productVariantFieldsSchema)
+      .min(1, "At least one product variant is required."),
+  }),
 });
 
 const updateProductSchema = z.object({
@@ -56,21 +81,16 @@ const updateProductSchema = z.object({
 
       slug: z.string().trim().min(3).max(255).optional(),
 
-      sku: z.string().trim().min(3).max(100).optional(),
-
       short_description: z.string().optional(),
 
       description: z.string().optional(),
 
-      price: z.coerce.number().positive().optional(),
-
-      compare_price: z.coerce.number().positive().optional(),
-
-      quantity: z.coerce.number().int().min(0).optional(),
-
       is_active: z.boolean().optional(),
 
       is_featured: z.boolean().optional(),
+    })
+    .refine((data) => Object.keys(data).length > 0, {
+      message: "At least one field is required.",
     })
     .refine((data) => Object.keys(data).length > 0, {
       message: "At least one field is required.",
