@@ -39,8 +39,12 @@ const variantValueRoutes = require("./routes/variantValue.routes");
 const productVariantRoutes = require("./routes/productVariant.routes");
 const cartRoutes = require("./routes/cart.routes");
 const orderRoutes = require("./routes/order.routes");
+const paymentRoutes = require("./routes/payment.routes");
+
+const paymentWebhookRoutes = require("./routes/paymentWebhook.routes");
 
 var app = express();
+app.use("/api/payments/webhook", paymentWebhookRoutes);
 
 /**
  * morgan logger logs the request type, path, status code, response time, and other details to the console for debugging and monitoring purposes.
@@ -85,6 +89,7 @@ app.use("/api/variant-values", variantValueRoutes);
 app.use("/api/product-variants", productVariantRoutes);
 app.use("/api/cart", cartRoutes);
 app.use("/api/orders", orderRoutes);
+app.use("/api/payments", paymentRoutes);
 
 // catch 404 and forward to error handler
 app.use(errorHandler);

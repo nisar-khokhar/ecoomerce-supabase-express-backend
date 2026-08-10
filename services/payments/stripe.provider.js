@@ -18,6 +18,11 @@ const createPayment = async ({
     amount: Math.round(Number(amount) * 100),
     currency: currency.toLowerCase(),
 
+    automatic_payment_methods: {
+      enabled: true,
+      allow_redirects: "never",
+    },
+
     metadata: {
       payment_id: String(paymentId),
       order_id: String(orderId),
