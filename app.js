@@ -41,6 +41,7 @@ const cartRoutes = require("./routes/cart.routes");
 const orderRoutes = require("./routes/order.routes");
 const paymentRoutes = require("./routes/payment.routes");
 const refundRoutes = require("./routes/refund.routes");
+const reviewRoutes = require("./routes/review.routes");
 
 const paymentWebhookRoutes = require("./routes/paymentWebhook.routes");
 
@@ -92,6 +93,7 @@ app.use("/api/cart", cartRoutes);
 app.use("/api/orders", orderRoutes);
 app.use("/api/payments", paymentRoutes);
 app.use("/api/refunds", refundRoutes);
+app.use("/api/reviews", reviewRoutes);
 
 // catch 404 and forward to error handler
 app.use(errorHandler);
