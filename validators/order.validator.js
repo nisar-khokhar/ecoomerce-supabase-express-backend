@@ -33,6 +33,7 @@ const getOrdersSchema = z.object({
 
     limit: z.coerce.number().int().positive().optional(),
 
+    // Order fulfillment status
     status: z
       .enum([
         "pending",
@@ -41,13 +42,33 @@ const getOrdersSchema = z.object({
         "shipped",
         "delivered",
         "cancelled",
-        "refunded",
       ])
       .optional(),
 
+    // Payment lifecycle status
     payment_status: z
       .enum(["pending", "paid", "failed", "refunded", "partially_refunded"])
       .optional(),
+  }),
+});
+
+// ============================================
+// Update Order Status
+// ============================================
+
+const updateOrderStatusSchema = z.object({
+  params: z.object({
+    id: idSchema,
+  }),
+
+  body: z.object({
+    status: z.enum([
+      "confirmed",
+      "processing",
+      "shipped",
+      "delivered",
+      "cancelled",
+    ]),
   }),
 });
 
@@ -55,4 +76,5 @@ module.exports = {
   createOrderSchema,
   orderIdParamSchema,
   getOrdersSchema,
+  updateOrderStatusSchema,
 };

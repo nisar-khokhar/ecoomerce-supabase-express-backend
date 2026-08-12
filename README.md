@@ -1,141 +1,506 @@
-# Node Express CRUD
+# Node Express E-commerce API
 
-A polished CRUD API built with Node.js, Express, and Supabase. This project manages products, categories, and brands with server-side validation, query filtering, pagination, sorting, and image relations.
+This backend provides a modular REST API for an e-commerce storefront and admin-ready workflow. It is currently built with Node.js, Express, and Supabase, and it supports product catalog management plus authenticated customer features such as profile, addresses, wishlist, cart, orders, and payments.
 
 ## 🚀 Project Overview
 
-This application is a backend API for an e-commerce-style product management system. It uses:
+The API is organized around reusable modules:
 
-- Express for routing and middleware
-- Supabase as the database client
-- Zod for request validation
-- Modular controllers, services, and routes for clean separation of concerns
-- Query builder helpers for flexible product filtering, sorting, and pagination
+- Express routes for each feature area
+- Controllers for request handling
+- Services for business logic
+- Validators using Zod for request validation
+- Supabase for data persistence
+- JWT-based authentication for protected routes
 
-## ✨ Current Feature Set
+## ✅ Current Implemented APIs
 
-- Products
-  - Create, read, update, delete
-  - Filtering by category, brand, featured, and active status
-  - Search by product name
-  - Sorting by `price`, `name`, or `created_at`
-  - Pagination support
-  - Includes related category, brand, and product image data
+The following modules are already available for frontend integration:
 
-- Categories
-  - Create, read, update, delete
-  - Sorted by `sort_order`
+- Catalog: products, categories, brands, product variants, variant types, variant values
+- Authentication and user profile
+- Address management
+- Wishlist
+- Cart
+- Orders and checkout
+- Payments
 
-- Brands
-  - Create, read, update, delete
-  - Sorted by name
+## 🔧 Base URL
 
-- Request validation for payloads and route parameters using Zod
-- Centralized error handling and async middleware handling
+For local development:
 
-## 📁 Project Structure
+- Base URL: http://localhost:8000
+- API prefix: /api
 
-- `app.js` — main Express app configuration
-- `bin/www` — server startup script
-- `routes/` — route definitions for categories, brands, products
-- `controllers/` — request handlers and response formatting
-- `services/` — business logic and Supabase database operations
-- `validators/` — Zod schema validation for requests
-- `middlewares/` — validation, async error handling, and error responses
-- `helpers/` — reusable query builder helpers for product filtering
-- `config/` — Supabase client configuration
-- `public/` — static file serving folder
-- `supabase/` — database migration and seed files
+Example:
 
-## 🧩 Prerequisites
+- http://localhost:8000/api/products
+- http://localhost:8000/api/auth/login
 
-- Node.js 18+ recommended
-- Supabase project with database tables for `products`, `categories`, `brands`, and `product_images`
-- Environment variables configured locally
+## 🔐 Authentication
 
-## ⚙️ Environment Variables
+Protected endpoints require a Bearer token in the Authorization header.
 
-Create a `.env.local` file for development or `.env` for production with:
-
-```env
-PORT=3000
-SUPABASE_URL=<your-supabase-url>
-SUPABASE_PUBLISHABLE_KEY=<your-supabase-publishable-key>
+```http
+Authorization: Bearer <access_token>
 ```
 
-> Note: The project currently uses `SUPABASE_PUBLISHABLE_KEY` in `config/supabase.js`. For production use, replace this with your Supabase service role or secret key as appropriate.
+Expected response shape for successful requests:
 
-## 🧪 Install and Run
+```json
+{
+  "success": true,
+  "message": "Request completed successfully.",
+  "data": {}
+}
+```
+
+Expected response shape for errors:
+
+```json
+{
+  "success": false,
+  "message": "Something went wrong"
+}
+```
+
+## 📦 Common Status Codes
+
+- 200 OK: successful read/update
+- 201 Created: successful create
+- 400 Bad Request: invalid payload or validation failure
+- 401 Unauthorized: missing or invalid token
+- 404 Not Found: resource not found
+- 500 Internal Server Error: unexpected server issue
+
+---
+
+## 1) Health Check
+
+### GET /api/health
+
+Checks whether the API is running.
+
+Example:
+
+```bash
+curl http://localhost:8000/api/health
+```
+
+Response:
+
+```json
+{
+  "success": true,
+  "message": "API is healthy"
+}
+```
+
+---
+
+## 2) Authentication
+
+### POST /api/auth/register
+
+Create a new customer account.
+
+Request body:
+
+```json
+{
+  "first_name": "John",
+  "last_name": "Doe",
+  "email": "john@example.com",
+  "phone": "923001234567",
+  "password": "StrongPass@123"
+}
+```
+
+Response:
+
+```json
+{
+  "success": true,
+  "message": "User registered successfully.",
+  "data": {
+    "id": 1,
+    "email": "john@example.com"
+  }
+}
+```
+
+### POST /api/auth/login
+
+Log in a user and receive a JWT-based session token.
+
+Request body:
+
+```json
+{
+  "email": "john@example.com",
+  "password": "StrongPass@123"
+}
+```
+
+Response:
+
+```json
+{
+  "success": true,
+  "message": "Login successful.",
+  "data": {
+    "access_token": "...",
+    "refresh_token": "...",
+    "user": {
+      "id": 1,
+      "email": "john@example.com"
+    }
+  }
+}
+```
+
+### GET /api/auth/me
+
+Get the currently logged-in user's basic profile information.
+
+Headers:
+
+```http
+Authorization: Bearer <access_token>
+```
+
+---
+
+## 3) User Profile
+
+### GET /api/users/profile
+
+Get the logged-in user's profile.
+
+### PATCH /api/users/profile
+
+Update profile details.
+
+Request body example:
+
+```json
+{
+  "first_name": "Jane"
+}
+```
+
+### PUT /api/users/change-password
+
+Change the authenticated user's password.
+
+Request body:
+
+```json
+{
+  "current_password": "OldPass@123",
+  "new_password": "NewPass@123"
+}
+```
+
+---
+
+## 4) Addresses
+
+All address routes require authentication.
+
+### GET /api/addresses
+
+Get all addresses for the logged-in user.
+
+### GET /api/addresses/:id
+
+Get one address by ID.
+
+### POST /api/addresses
+
+Create a new address.
+
+Request body:
+
+```json
+{
+  "label": "Home",
+  "recipient_name": "John Doe",
+  "phone": "923001234567",
+  "address_line_1": "House 12, Street 5",
+  "address_line_2": "Gulberg",
+  "city": "Lahore",
+  "province": "Punjab",
+  "postal_code": "54000",
+  "country_code": "PK",
+  "delivery_notes": "Leave at gate"
+}
+```
+
+### PATCH /api/addresses/:id
+
+Update an address.
+
+### DELETE /api/addresses/:id
+
+Delete an address.
+
+### PATCH /api/addresses/:id/default
+
+Set an address as the default delivery address.
+
+---
+
+## 5) Wishlist
+
+All wishlist routes require authentication.
+
+### GET /api/wishlist
+
+Returns the current user's wishlist.
+
+### POST /api/wishlist
+
+Add a product to the wishlist.
+
+Request body:
+
+```json
+{
+  "product_id": 12
+}
+```
+
+### DELETE /api/wishlist/:productId
+
+Remove a product from the wishlist.
+
+---
+
+## 6) Cart
+
+All cart routes require authentication.
+
+### GET /api/cart
+
+Get the authenticated user's cart.
+
+### POST /api/cart/items
+
+Add a product variant to the cart.
+
+Request body:
+
+```json
+{
+  "product_variant_id": 5,
+  "quantity": 2
+}
+```
+
+### PATCH /api/cart/items/:variantId
+
+Update cart item quantity.
+
+Request body:
+
+```json
+{
+  "quantity": 3
+}
+```
+
+### DELETE /api/cart/items/:variantId
+
+Remove one item from the cart.
+
+### DELETE /api/cart
+
+Clear the complete cart.
+
+---
+
+## 7) Orders
+
+All order routes require authentication.
+
+### POST /api/orders
+
+Create an order from the current cart and selected addresses.
+
+Request body:
+
+```json
+{
+  "shipping_address_id": 1,
+  "billing_address_id": 1
+}
+```
+
+### GET /api/orders
+
+Get all orders for the logged-in user.
+
+Optional query parameters:
+
+- page
+- limit
+- status
+- payment_status
+
+Example:
+
+```http
+GET /api/orders?page=1&limit=10&status=pending
+```
+
+### GET /api/orders/:id
+
+Get one order by ID.
+
+---
+
+## 8) Payments
+
+All payment routes require authentication.
+
+### POST /api/payments/orders/:orderId
+
+Initialize a payment session for an existing order.
+
+Example:
+
+```bash
+curl -X POST http://localhost:8000/api/payments/orders/12 \
+  -H "Authorization: Bearer <token>"
+```
+
+### POST /api/payments/webhook/stripe
+
+Stripe webhook endpoint for payment events.
+
+> This endpoint is used by payment providers and should be configured in your payment dashboard.
+
+---
+
+## 9) Catalog APIs
+
+### Categories
+
+- GET /api/categories
+- GET /api/categories/:id
+- POST /api/categories
+- PATCH /api/categories/:id
+- DELETE /api/categories/:id
+
+### Brands
+
+- GET /api/brands
+- GET /api/brands/:id
+- POST /api/brands
+- PATCH /api/brands/:id
+- DELETE /api/brands/:id
+
+### Products
+
+- GET /api/products
+- GET /api/products/:id
+- POST /api/products
+- PATCH /api/products/:id
+- DELETE /api/products/:id
+
+### Product query parameters
+
+For GET /api/products:
+
+- page
+- limit
+- search
+- category
+- brand
+- featured
+- active
+- sort (price, name, created_at)
+- order (asc, desc)
+
+Example:
+
+```http
+GET /api/products?search=iphone&category=1&featured=true&sort=price&order=asc
+```
+
+---
+
+## 10) Frontend Integration Notes
+
+- Store the access token securely in memory or a secure storage mechanism.
+- Always attach the token to protected routes.
+- Use the product detail and variant endpoints to build product cards and checkout flows.
+- Cart, wishlist, and addresses should be loaded after authentication is complete.
+- For create/update operations, send JSON content with the correct Content-Type header.
+
+Example header:
+
+```http
+Content-Type: application/json
+```
+
+---
+
+## 11) Upcoming APIs
+
+The following modules are planned for future implementation:
+
+- Reviews
+- Discounts
+- Coupons
+- Admin dashboard analytics and management endpoints
+- Advanced order management
+- Product image upload support
+
+---
+
+## 🧪 Run the Project
+
+Install dependencies:
 
 ```bash
 npm install
+```
+
+Run in development mode:
+
+```bash
 npm run dev
 ```
 
-Or start the production server:
+Or start the server normally:
 
 ```bash
 npm start
 ```
 
-The server listens on `http://localhost:3000` by default.
+## ⚙️ Environment Setup
 
-## 🔗 API Endpoints
+Create a local environment file using the provided example file:
 
-### Categories
+```bash
+cp .env.example .env.local
+```
 
-- `GET /api/categories`
-- `GET /api/categories/:id`
-- `POST /api/categories`
-- `PATCH /api/categories/:id`
-- `DELETE /api/categories/:id`
+Required variables include:
 
-### Brands
-
-- `GET /api/brands`
-- `GET /api/brands/:id`
-- `POST /api/brands`
-- `PATCH /api/brands/:id`
-- `DELETE /api/brands/:id`
-
-### Products
-
-- `GET /api/products`
-- `GET /api/products/:id`
-- `POST /api/products`
-- `PATCH /api/products/:id`
-- `DELETE /api/products/:id`
-
-### Product Query Parameters
-
-Supported query parameters for `GET /api/products`:
-
-- `page` — page number
-- `limit` — items per page
-- `search` — search by product name
-- `category` — category ID filter
-- `brand` — brand ID filter
-- `featured` — boolean filter
-- `active` — boolean filter
-- `sort` — `price`, `name`, or `created_at`
-- `order` — `asc` or `desc`
-
-## 📌 Notes
-
-- Validation is enforced at the route level, so invalid requests return structured errors.
-- Product endpoints return related categories, brands, and product images where available.
-- The app serves static files from `public/`.
-
-## 🛠️ Next Improvements
-
-Potential next steps for the project:
-
-- Add authentication/authorization
-- Add product image upload handling
-- Add frontend or admin dashboard
-- Add more comprehensive API documentation with Swagger/OpenAPI
-- Use Supabase service role key securely instead of publishable key
+- PORT
+- SUPABASE_URL
+- SUPABASE_PUBLISHABLE_KEY
+- SUPABASE_SECRET_KEY
+- SUPABASE_JWKS_URL
+- JWT_ACCESS_SECRET
+- JWT_REFRESH_SECRET
+- PAYMENT_PROVIDER
+- STRIPE_SECRET_KEY
+- STRIPE_WEBHOOK_SECRET
 
 ---
 
-Made with Node.js, Express, and Supabase as the current backend foundation for a product catalog CRUD system.
+This README is intended as a frontend handoff reference for the current backend implementation.

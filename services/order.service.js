@@ -1,4 +1,5 @@
 const supabase = require("../config/supabase");
+const { refundOrder } = require("./payment.service");
 
 // ============================================
 // Get User Address
@@ -406,8 +407,383 @@ const getUserOrders = async (
   };
 };
 
+// ============================================
+// Order Status Transitions
+// ============================================
+
+const ORDER_STATUS_TRANSITIONS = {
+  pending: ["confirmed", "cancelled"],
+
+  confirmed: ["processing", "cancelled"],
+
+  processing: ["shipped"],
+
+  shipped: ["delivered"],
+
+  delivered: [],
+
+  cancelled: [],
+
+  refunded: [],
+};
+
+// ============================================
+// Validate Order Status Transition
+// ============================================
+
+const validateOrderStatusTransition = (currentStatus, newStatus) => {
+  const allowedStatuses = ORDER_STATUS_TRANSITIONS[currentStatus];
+
+  if (!allowedStatuses) {
+    throw new Error(`Invalid current order status: ${currentStatus}.`);
+  }
+
+  if (!allowedStatuses.includes(newStatus)) {
+    throw new Error(
+      `Order cannot transition from ${currentStatus} to ${newStatus}.`,
+    );
+  }
+};
+
+// ============================================
+// Update Order Status
+// ============================================
+
+const updateOrderStatus = async (orderId, newStatus) => {
+  const { data: order, error: fetchError } = await supabase
+    .from("orders")
+    .select(
+      `
+      id,
+      user_id,
+      order_number,
+      status,
+      payment_status
+    `,
+    )
+    .eq("id", orderId)
+    .maybeSingle();
+
+  if (fetchError) {
+    throw new Error("Unable to fetch order.");
+  }
+
+  if (!order) {
+    throw new Error("Order not found.");
+  }
+
+  // ============================================
+  // Validate Status Transition
+  // ============================================
+
+  validateOrderStatusTransition(order.status, newStatus);
+
+  // ============================================
+  // Paid Order Required For Fulfillment
+  // ============================================
+
+  if (
+    ["confirmed", "processing", "shipped", "delivered"].includes(newStatus) &&
+    order.payment_status !== "paid"
+  ) {
+    throw new Error("Order must be paid before fulfillment.");
+  }
+
+  // ============================================
+  // Update Order Status
+  // ============================================
+
+  const { data, error } = await supabase
+    .from("orders")
+    .update({
+      status: newStatus,
+    })
+    .eq("id", orderId)
+    .select(
+      `
+      id,
+      user_id,
+      order_number,
+      status,
+      payment_status,
+      shipping_address,
+      billing_address,
+      subtotal,
+      shipping_fee,
+      discount_amount,
+      tax_amount,
+      total_amount,
+      created_at,
+      updated_at,
+
+      order_items (
+        id,
+        product_variant_id,
+        product_name,
+        variant_sku,
+        variant_attributes,
+        quantity,
+        unit_price,
+        subtotal,
+        created_at
+      )
+    `,
+    )
+    .single();
+
+  if (error) {
+    throw new Error("Unable to update order status.");
+  }
+
+  return data;
+};
+
+// ============================================
+// Cancel Order
+// ============================================
+
+const cancelOrder = async (userId, orderId) => {
+  const order = await getOrderById(userId, orderId);
+
+  // ==========================================
+  // Validate Order Status Transition
+  // ==========================================
+
+  validateOrderStatusTransition(order.status, "cancelled");
+
+  // ==========================================
+  // Paid Orders Require Refund
+  // ==========================================
+
+  if (["paid", "partially_refunded"].includes(order.payment_status)) {
+    throw new Error(
+      "Paid orders cannot be cancelled directly. A refund is required.",
+    );
+  }
+
+  // ==========================================
+  // Cancel Unpaid Order
+  // ==========================================
+
+  const { data, error } = await supabase
+    .from("orders")
+    .update({
+      status: "cancelled",
+      updated_at: new Date().toISOString(),
+    })
+    .eq("id", orderId)
+    .eq("user_id", userId)
+    .select(
+      `
+      id,
+      user_id,
+      order_number,
+      status,
+      payment_status,
+      shipping_address,
+      billing_address,
+      subtotal,
+      shipping_fee,
+      discount_amount,
+      tax_amount,
+      total_amount,
+      created_at,
+      updated_at,
+
+      order_items (
+        id,
+        product_variant_id,
+        product_name,
+        variant_sku,
+        variant_attributes,
+        quantity,
+        unit_price,
+        subtotal,
+        created_at
+      )
+      `,
+    )
+    .single();
+
+  if (error) {
+    throw new Error("Unable to cancel order.");
+  }
+
+  return data;
+};
+
+// ============================================
+// Cancel Paid Order
+// ============================================
+
+const cancelPaidOrder = async (userId, orderId) => {
+  const order = await getOrderById(userId, orderId);
+
+  // ==========================================
+  // Validate Order Status
+  // ==========================================
+
+  validateOrderStatusTransition(order.status, "cancelled");
+
+  // ==========================================
+  // Verify Payment
+  // ==========================================
+
+  if (!["paid", "partially_refunded"].includes(order.payment_status)) {
+    throw new Error("Order does not require a refund.");
+  }
+
+  // ==========================================
+  // Initiate Refund
+  // ==========================================
+
+  await refundOrder({
+    orderId: order.id,
+    reason: "Customer cancelled order.",
+    cancellation: true,
+  });
+
+  // ==========================================
+  // Do NOT immediately mark order cancelled
+  // ==========================================
+  //
+  // Stripe webhook remains authoritative.
+  //
+  // The refund webhook will update payment_status.
+  //
+  // We will handle cancellation state there.
+  // ==========================================
+
+  return {
+    message: "Order cancellation and refund initiated.",
+  };
+};
+
+// ============================================
+// Admin - Get All Orders
+// ============================================
+
+const getAllOrders = async ({
+  page = 1,
+  limit = 10,
+  status,
+  payment_status,
+} = {}) => {
+  const offset = (page - 1) * limit;
+
+  let query = supabase.from("orders").select(
+    `
+        id,
+        user_id,
+        order_number,
+        status,
+        payment_status,
+        subtotal,
+        shipping_fee,
+        discount_amount,
+        tax_amount,
+        total_amount,
+        created_at,
+        updated_at
+      `,
+    { count: "exact" },
+  );
+
+  if (status) {
+    query = query.eq("status", status);
+  }
+
+  if (payment_status) {
+    query = query.eq("payment_status", payment_status);
+  }
+
+  query = query
+    .order("created_at", { ascending: false })
+    .range(offset, offset + limit - 1);
+
+  const { data, error, count } = await query;
+
+  if (error) {
+    throw new Error("Unable to fetch orders.");
+  }
+
+  const totalPages = Math.ceil(count / limit);
+
+  return {
+    orders: data,
+    pagination: {
+      page,
+      limit,
+      total: count,
+      totalPages,
+      hasNextPage: page < totalPages,
+      hasPreviousPage: page > 1,
+    },
+  };
+};
+
+// ============================================
+// Admin - Get Order By ID
+// ============================================
+
+const getAdminOrderById = async (orderId) => {
+  const { data, error } = await supabase
+    .from("orders")
+    .select(
+      `
+      id,
+      user_id,
+      order_number,
+      status,
+      payment_status,
+      shipping_address,
+      billing_address,
+      subtotal,
+      shipping_fee,
+      discount_amount,
+      tax_amount,
+      total_amount,
+      created_at,
+      updated_at,
+
+      order_items (
+        id,
+        product_variant_id,
+        product_name,
+        variant_sku,
+        variant_attributes,
+        quantity,
+        unit_price,
+        subtotal,
+        created_at
+      )
+    `,
+    )
+    .eq("id", orderId)
+    .maybeSingle();
+
+  if (error) {
+    throw new Error("Unable to fetch order.");
+  }
+
+  if (!data) {
+    throw new Error("Order not found.");
+  }
+
+  return data;
+};
+
 module.exports = {
   createOrder,
   getOrderById,
   getUserOrders,
+
+  getAllOrders,
+  getAdminOrderById,
+
+  updateOrderStatus,
+  cancelOrder,
+  cancelPaidOrder,
+
+  validateOrderStatusTransition,
 };

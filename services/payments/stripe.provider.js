@@ -52,6 +52,18 @@ const verifyWebhook = async (payload, signature) => {
 };
 
 // ============================================
+// Get Charge With Refunds
+// ============================================
+
+const getChargeWithRefunds = async (chargeId) => {
+  const charge = await stripe.charges.retrieve(chargeId, {
+    expand: ["refunds.data"],
+  });
+
+  return charge;
+};
+
+// ============================================
 // Get Payment Status
 // ============================================
 
@@ -64,8 +76,29 @@ const getPaymentStatus = async (providerPaymentId) => {
   };
 };
 
+// ============================================
+// Create Refund
+// ============================================
+
+const createRefund = async ({ providerPaymentId, amount }) => {
+  const refund = await stripe.refunds.create({
+    payment_intent: providerPaymentId,
+    amount: amount ? Math.round(Number(amount) * 100) : undefined,
+  });
+
+  return {
+    providerRefundId: refund.id,
+    providerPaymentId: providerPaymentId,
+    amount: refund.amount,
+    currency: refund.currency,
+    status: refund.status,
+  };
+};
+
 module.exports = {
   createPayment,
   verifyWebhook,
   getPaymentStatus,
+  createRefund,
+  getChargeWithRefunds,
 };

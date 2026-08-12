@@ -232,6 +232,199 @@ const createPaymentForOrder = async ({ userId, orderId, customer }) => {
 };
 
 // ============================================
+// Refund Order
+// ============================================
+
+const refundOrder = async ({
+  orderId,
+  amount,
+  reason,
+  cancellation = false,
+}) => {
+  // ==========================================
+  // Get Order
+  // ==========================================
+
+  const { data: order, error: orderError } = await supabase
+    .from("orders")
+    .select(
+      `
+      id,
+      order_number,
+      user_id,
+      status,
+      payment_status,
+      total_amount
+    `,
+    )
+    .eq("id", orderId)
+    .maybeSingle();
+
+  if (orderError) {
+    throw new Error("Unable to fetch order.");
+  }
+
+  if (!order) {
+    throw new Error("Order not found.");
+  }
+
+  // ==========================================
+  // Order Must Be Paid
+  // ==========================================
+
+  if (order.payment_status !== "paid") {
+    throw new Error("Only paid orders can be refunded.");
+  }
+
+  // ==========================================
+  // Get Payment
+  // ==========================================
+
+  const { data: payment, error: paymentError } = await supabase
+    .from("payments")
+    .select(
+      `
+      id,
+      order_id,
+      provider,
+      provider_payment_id,
+      amount,
+      currency,
+      status
+    `,
+    )
+    .eq("order_id", order.id)
+    .in("status", ["paid", "partially_refunded"])
+    .maybeSingle();
+
+  if (paymentError) {
+    throw new Error("Unable to fetch payment.");
+  }
+
+  if (!payment) {
+    throw new Error("Paid payment not found.");
+  }
+
+  if (!payment.provider_payment_id) {
+    throw new Error("Payment provider transaction ID is missing.");
+  }
+
+  // ==========================================
+  // Get Payment Provider
+  // ==========================================
+
+  const { name: providerName, provider } = getPaymentProvider();
+
+  if (payment.provider !== providerName) {
+    throw new Error("Payment provider mismatch.");
+  }
+
+  // ==========================================
+  // Calculate Already Refunded Amount
+  // ==========================================
+
+  const alreadyRefunded = await getRefundedAmount(payment.id);
+
+  const paymentAmount = Number(payment.amount);
+
+  const remainingRefundable = paymentAmount - alreadyRefunded;
+
+  // ==========================================
+  // Determine Refund Amount
+  // ==========================================
+
+  const refundAmount =
+    amount !== undefined ? Number(amount) : remainingRefundable;
+
+  // ==========================================
+  // Validate Refund Amount
+  // ==========================================
+
+  if (refundAmount <= 0) {
+    throw new Error("No refundable amount remains.");
+  }
+
+  if (refundAmount > remainingRefundable) {
+    throw new Error(
+      `Refund amount exceeds the remaining refundable amount of ${remainingRefundable}.`,
+    );
+  }
+
+  // ==========================================
+  // Create Internal Refund Record
+  // ==========================================
+
+  const { data: refund, error: refundError } = await supabase
+    .from("refunds")
+    .insert({
+      payment_id: payment.id,
+      order_id: order.id,
+      provider: providerName,
+      amount: refundAmount,
+      currency: payment.currency,
+      status: "pending",
+      reason: reason || null,
+      cancellation_requested: cancellation,
+    })
+    .select()
+    .single();
+
+  if (refundError) {
+    throw new Error("Unable to create refund record.");
+  }
+
+  try {
+    // ========================================
+    // Create Provider Refund
+    // ========================================
+
+    const providerRefund = await provider.createRefund({
+      providerPaymentId: payment.provider_payment_id,
+
+      amount: refundAmount,
+    });
+
+    // ========================================
+    // Update Refund Record
+    // ========================================
+
+    const { data: updatedRefund, error: updateError } = await supabase
+      .from("refunds")
+      .update({
+        provider_refund_id: providerRefund.providerRefundId,
+
+        status: "pending",
+
+        provider_response: providerRefund,
+
+        updated_at: new Date().toISOString(),
+      })
+      .eq("id", refund.id)
+      .select()
+      .single();
+
+    if (updateError) {
+      throw new Error("Unable to update refund record.");
+    }
+
+    return updatedRefund;
+  } catch (error) {
+    await supabase
+      .from("refunds")
+      .update({
+        status: "failed",
+        provider_response: {
+          error: error.message,
+        },
+        updated_at: new Date().toISOString(),
+      })
+      .eq("id", refund.id);
+
+    throw error;
+  }
+};
+
+// ============================================
 // Handle Stripe Webhook
 // ============================================
 
@@ -245,6 +438,10 @@ const handleStripeWebhook = async (payload, signature) => {
 
     case "payment_intent.payment_failed":
       await handleStripePaymentFailed(stripeEvent.data.object);
+      break;
+
+    case "charge.refunded":
+      await handleStripeRefunded(stripeEvent.data.object);
       break;
 
     default:
@@ -319,11 +516,209 @@ const handleStripePaymentFailed = async (paymentIntent) => {
 };
 
 // ============================================
+// Stripe Refund Completed
+// ============================================
+
+const handleStripeRefunded = async (charge) => {
+  console.log("============================================");
+  console.log("STRIPE REFUND WEBHOOK RECEIVED");
+  console.log("Charge ID:", charge.id);
+  console.log("Payment Intent:", charge.payment_intent);
+  console.log("============================================");
+
+  const providerPaymentId = charge.payment_intent;
+
+  if (!providerPaymentId) {
+    console.log("Refund event does not contain a payment intent.");
+
+    return;
+  }
+
+  // ==========================================
+  // Find Internal Payment
+  // ==========================================
+
+  const payment = await getPaymentByProviderPaymentId(
+    "stripe",
+    providerPaymentId,
+  );
+
+  // ==========================================
+  // Retrieve Charge With Refunds
+  // ==========================================
+
+  const stripeCharge = await stripeProvider.getChargeWithRefunds(charge.id);
+
+  const stripeRefund = stripeCharge.refunds?.data?.[0];
+
+  const providerRefundId = stripeRefund?.id;
+
+  if (!providerRefundId) {
+    console.log("Unable to determine Stripe refund ID.");
+
+    return;
+  }
+
+  console.log(`Stripe refund detected: ${providerRefundId}`);
+
+  // ==========================================
+  // Find Internal Refund
+  // ==========================================
+
+  const { data: refund, error: refundError } = await supabase
+    .from("refunds")
+    .select("*")
+    .eq("payment_id", payment.id)
+    .eq("provider", "stripe")
+    .eq("provider_refund_id", providerRefundId)
+    .maybeSingle();
+
+  if (refundError) {
+    throw new Error("Unable to fetch refund.");
+  }
+
+  if (!refund) {
+    console.log(
+      `Refund ${providerRefundId} not found for payment ${payment.id}.`,
+    );
+
+    return;
+  }
+
+  // ==========================================
+  // Mark Refund Successful
+  // ==========================================
+
+  if (refund.status !== "succeeded") {
+    const { error: updateRefundError } = await supabase
+      .from("refunds")
+      .update({
+        status: "succeeded",
+        provider_response: charge,
+        updated_at: new Date().toISOString(),
+      })
+      .eq("id", refund.id);
+
+    if (updateRefundError) {
+      throw new Error("Unable to update refund record.");
+    }
+  }
+
+  // ==========================================
+  // Calculate Total Refunded
+  // ==========================================
+
+  const totalRefunded = await getRefundedAmount(payment.id);
+
+  const paymentAmount = Number(payment.amount);
+
+  // ==========================================
+  // Determine Payment Status
+  // ==========================================
+
+  const paymentStatus =
+    totalRefunded >= paymentAmount ? "refunded" : "partially_refunded";
+
+  // ==========================================
+  // Update Payment
+  // ==========================================
+
+  const { error: paymentUpdateError } = await supabase
+    .from("payments")
+    .update({
+      status: paymentStatus,
+      provider_response: charge,
+      updated_at: new Date().toISOString(),
+    })
+    .eq("id", payment.id);
+
+  if (paymentUpdateError) {
+    throw new Error("Unable to update payment status.");
+  }
+
+  // ==========================================
+  // Update Order
+  // ==========================================
+
+  const orderUpdate = {
+    payment_status: paymentStatus,
+    updated_at: new Date().toISOString(),
+  };
+
+  // ==========================================
+  // Cancellation Refund
+  // ==========================================
+
+  if (paymentStatus === "refunded" && refund.cancellation_requested) {
+    orderUpdate.status = "cancelled";
+  }
+
+  const { error: orderError } = await supabase
+    .from("orders")
+    .update(orderUpdate)
+    .eq("id", payment.order_id);
+
+  if (orderError) {
+    throw new Error("Unable to update order refund status.");
+  }
+
+  // ==========================================
+  // Restore Inventory For Cancellation
+  // ==========================================
+
+  if (paymentStatus === "refunded" && refund.cancellation_requested) {
+    const { error: inventoryError } = await supabase.rpc(
+      "restore_cancelled_order_inventory",
+      {
+        p_order_id: payment.order_id,
+      },
+    );
+
+    if (inventoryError) {
+      throw new Error(
+        `Unable to restore cancelled order inventory: ${inventoryError.message}`,
+      );
+    }
+
+    console.log(`Inventory restored for cancelled order ${payment.order_id}.`);
+  }
+
+  console.log(
+    `Refund ${refund.id} processed. ` +
+      `Payment ${payment.id} is now ${paymentStatus}. ` +
+      `Total refunded: ${totalRefunded}.`,
+  );
+};
+
+// ============================================
+// Get Total Refunded Amount
+// ============================================
+
+const getRefundedAmount = async (paymentId) => {
+  const { data, error } = await supabase
+    .from("refunds")
+    .select("amount")
+    .eq("payment_id", paymentId)
+    .eq("status", "succeeded");
+
+  if (error) {
+    throw new Error("Unable to calculate refunded amount.");
+  }
+
+  return (data || []).reduce(
+    (total, refund) => total + Number(refund.amount),
+    0,
+  );
+};
+
+// ============================================
 // Exports
 // ============================================
 
 module.exports = {
   createPayment,
   createPaymentForOrder,
+  refundOrder,
+
   handleStripeWebhook,
 };
