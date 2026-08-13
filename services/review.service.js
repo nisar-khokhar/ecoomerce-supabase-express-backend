@@ -10,11 +10,13 @@ const verifyUserPurchasedProduct = async (userId, productId) => {
     .select(
       `
         id,
+
         orders!inner (
           id,
           user_id,
           status
         ),
+
         product_variants!inner (
           id,
           product_id
@@ -101,8 +103,14 @@ const createReview = async ({ userId, productId, rating, title, review }) => {
       rating,
       title: title || null,
       review: review || null,
+
       is_verified_purchase: true,
-      is_approved: true,
+
+      // Reviews are published by default.
+      // Moderation is for policy violations,
+      // not for controlling positive/negative
+      // opinions.
+      moderation_status: "published",
     })
     .select(
       `
@@ -113,7 +121,12 @@ const createReview = async ({ userId, productId, rating, title, review }) => {
         title,
         review,
         is_verified_purchase,
-        is_approved,
+
+        moderation_status,
+        moderation_reason,
+        moderated_by,
+        moderated_at,
+
         created_at,
         updated_at
       `,
@@ -162,7 +175,7 @@ const getProductReviews = async (
   const offset = (page - 1) * limit;
 
   // ==========================================
-  // Fetch Reviews
+  // Fetch Published Reviews
   // ==========================================
 
   let query = supabase
@@ -176,9 +189,13 @@ const getProductReviews = async (
         title,
         review,
         is_verified_purchase,
+
+        moderation_status,
+
         created_at,
         updated_at,
-        users (
+
+        users!product_reviews_user_fk (
           first_name,
           last_name
         )
@@ -186,11 +203,22 @@ const getProductReviews = async (
       { count: "exact" },
     )
     .eq("product_id", productId)
-    .eq("is_approved", true);
+
+    // Only published reviews are visible
+    // to customers.
+    .in("moderation_status", ["published", "flagged"]);
+
+  // ==========================================
+  // Rating Filter
+  // ==========================================
 
   if (rating !== undefined) {
     query = query.eq("rating", rating);
   }
+
+  // ==========================================
+  // Pagination + Sorting
+  // ==========================================
 
   query = query
     .order("created_at", {
@@ -214,11 +242,17 @@ const getProductReviews = async (
     .from("product_reviews")
     .select("rating")
     .eq("product_id", productId)
-    .eq("is_approved", true);
+    .in("moderation_status", ["published", "flagged"]);
 
   if (statsError) {
+    console.error("RATING STATISTICS ERROR:", statsError);
+
     throw new Error("Unable to calculate rating statistics.");
   }
+
+  // ==========================================
+  // Calculate Rating Summary
+  // ==========================================
 
   const totalReviews = allReviews.length;
 
@@ -247,17 +281,21 @@ const getProductReviews = async (
 
   return {
     reviews,
+
     summary: {
       average_rating: averageRating,
       total_reviews: totalReviews,
       rating_distribution: ratingDistribution,
     },
+
     pagination: {
       page,
       limit,
       total: count,
       totalPages,
+
       hasNextPage: page < totalPages,
+
       hasPreviousPage: page > 1,
     },
   };
@@ -294,9 +332,12 @@ const updateReview = async ({ userId, reviewId, rating, title, review }) => {
   const { data, error } = await supabase
     .from("product_reviews")
     .update({
-      rating,
+      rating: rating !== undefined ? rating : existingReview.rating,
+
       title: title !== undefined ? title : existingReview.title,
+
       review: review !== undefined ? review : existingReview.review,
+
       updated_at: new Date().toISOString(),
     })
     .eq("id", reviewId)
@@ -310,7 +351,12 @@ const updateReview = async ({ userId, reviewId, rating, title, review }) => {
         title,
         review,
         is_verified_purchase,
-        is_approved,
+
+        moderation_status,
+        moderation_reason,
+        moderated_by,
+        moderated_at,
+
         created_at,
         updated_at
       `,
@@ -351,7 +397,7 @@ const deleteReview = async ({ userId, reviewId }) => {
   }
 
   // ==========================================
-  // Delete
+  // Delete Review
   // ==========================================
 
   const { error } = await supabase
@@ -370,6 +416,10 @@ const deleteReview = async ({ userId, reviewId }) => {
     id: reviewId,
   };
 };
+
+// ============================================
+// Exports
+// ============================================
 
 module.exports = {
   verifyUserPurchasedProduct,
