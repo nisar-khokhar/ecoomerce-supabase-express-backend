@@ -11,6 +11,7 @@ const {
   orderIdParamSchema,
   getOrdersSchema,
   updateOrderStatusSchema,
+  getAdminOrdersSchema,
 } = require("../validators/order.validator");
 
 const orderController = require("../controllers/order.controller");
@@ -24,10 +25,9 @@ router.use(authenticate);
 router.get(
   "/admin/all",
   authorize("admin"),
-  validate(getOrdersSchema),
+  validate(getAdminOrdersSchema),
   orderController.getAllOrders,
 );
-
 router.get(
   "/admin/:id",
   authorize("admin"),

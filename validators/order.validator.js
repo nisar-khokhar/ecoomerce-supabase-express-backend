@@ -62,13 +62,40 @@ const updateOrderStatusSchema = z.object({
   }),
 
   body: z.object({
-    status: z.enum([
-      "confirmed",
-      "processing",
-      "shipped",
-      "delivered",
-      "cancelled",
-    ]),
+    status: z.enum(["processing", "shipped", "delivered"]),
+  }),
+});
+
+// ============================================
+// Admin Get All Orders
+// ============================================
+
+const getAdminOrdersSchema = z.object({
+  query: z.object({
+    page: z.coerce.number().int().positive().optional(),
+
+    limit: z.coerce.number().int().positive().max(100).optional(),
+
+    status: z
+      .enum([
+        "pending",
+        "confirmed",
+        "processing",
+        "shipped",
+        "delivered",
+        "cancelled",
+      ])
+      .optional(),
+
+    payment_status: z
+      .enum(["pending", "paid", "failed", "refunded", "partially_refunded"])
+      .optional(),
+
+    search: z.string().trim().min(1).max(100).optional(),
+
+    date_from: z.coerce.date().optional(),
+
+    date_to: z.coerce.date().optional(),
   }),
 });
 
@@ -77,4 +104,5 @@ module.exports = {
   orderIdParamSchema,
   getOrdersSchema,
   updateOrderStatusSchema,
+  getAdminOrdersSchema,
 };

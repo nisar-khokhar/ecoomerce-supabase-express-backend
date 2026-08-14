@@ -412,9 +412,9 @@ const getUserOrders = async (
 // ============================================
 
 const ORDER_STATUS_TRANSITIONS = {
-  pending: ["confirmed", "cancelled"],
+  pending: ["cancelled"],
 
-  confirmed: ["processing", "cancelled"],
+  confirmed: ["processing"],
 
   processing: ["shipped"],
 
@@ -423,8 +423,6 @@ const ORDER_STATUS_TRANSITIONS = {
   delivered: [],
 
   cancelled: [],
-
-  refunded: [],
 };
 
 // ============================================
@@ -665,9 +663,12 @@ const cancelPaidOrder = async (userId, orderId) => {
 
 const getAllOrders = async ({
   page = 1,
-  limit = 10,
+  limit = 20,
   status,
   payment_status,
+  search,
+  date_from,
+  date_to,
 } = {}) => {
   const offset = (page - 1) * limit;
 
@@ -689,21 +690,57 @@ const getAllOrders = async ({
     { count: "exact" },
   );
 
+  // ==========================================
+  // Filter By Order Status
+  // ==========================================
+
   if (status) {
     query = query.eq("status", status);
   }
+
+  // ==========================================
+  // Filter By Payment Status
+  // ==========================================
 
   if (payment_status) {
     query = query.eq("payment_status", payment_status);
   }
 
+  // ==========================================
+  // Filter By Date
+  // ==========================================
+
+  if (date_from) {
+    query = query.gte("created_at", date_from.toISOString());
+  }
+
+  if (date_to) {
+    query = query.lte("created_at", date_to.toISOString());
+  }
+
+  // ==========================================
+  // Search By Order Number
+  // ==========================================
+
+  if (search) {
+    query = query.ilike("order_number", `%${search}%`);
+  }
+
+  // ==========================================
+  // Pagination
+  // ==========================================
+
   query = query
-    .order("created_at", { ascending: false })
+    .order("created_at", {
+      ascending: false,
+    })
     .range(offset, offset + limit - 1);
 
   const { data, error, count } = await query;
 
   if (error) {
+    console.error("ADMIN GET ORDERS ERROR:", error);
+
     throw new Error("Unable to fetch orders.");
   }
 
@@ -711,6 +748,7 @@ const getAllOrders = async ({
 
   return {
     orders: data,
+
     pagination: {
       page,
       limit,
@@ -721,7 +759,6 @@ const getAllOrders = async ({
     },
   };
 };
-
 // ============================================
 // Admin - Get Order By ID
 // ============================================
