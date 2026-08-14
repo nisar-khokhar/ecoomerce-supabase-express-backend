@@ -45,6 +45,7 @@ const reviewRoutes = require("./routes/review.routes");
 const adminReviewRoutes = require("./routes/admin-review.routes");
 const adminInventoryRoutes = require("./routes/admin-inventory.routes");
 const adminDashboardRoutes = require("./routes/admin-dashboard.routes");
+const adminSalesAnalyticsRoutes = require("./routes/admin-sales-analytics.routes");
 
 const paymentWebhookRoutes = require("./routes/paymentWebhook.routes");
 
@@ -100,6 +101,7 @@ app.use("/api/reviews", reviewRoutes);
 app.use("/api/admin/reviews", adminReviewRoutes);
 app.use("/api/admin/inventory", adminInventoryRoutes);
 app.use("/api/admin/dashboard", adminDashboardRoutes);
+app.use("/api/admin/analytics", adminSalesAnalyticsRoutes);
 
 // catch 404 and forward to error handler
 app.use(errorHandler);
