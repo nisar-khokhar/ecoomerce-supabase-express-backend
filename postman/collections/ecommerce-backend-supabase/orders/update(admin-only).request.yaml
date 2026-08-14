@@ -1,0 +1,12 @@
+$kind: http-request
+url: http://localhost:8000/api/orders/admin/2/status
+method: PATCH
+body:
+  type: json
+  content: "{\r\n  \"status\": \"delivered\"\r\n}"
+auth:
+  type: bearer
+  credentials:
+    token: "{{json_web_token_0pj8}}"
+settings: {}
+order: 4000

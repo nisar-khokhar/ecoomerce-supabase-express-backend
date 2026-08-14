@@ -1,0 +1,7 @@
+$kind: http-request
+url: localhost:8000/api/categories
+method: GET
+headers:
+  Authorization: Bearer {{json_web_token_0jix}}
+settings: {}
+order: 1000

@@ -1,0 +1,9 @@
+$kind: http-request
+url: localhost:3000/api/admin/reviews/2/restore
+method: PATCH
+auth:
+  type: bearer
+  credentials:
+    token: "{{supabase_service_role_api_key_10vf}}"
+settings: {}
+order: 5000

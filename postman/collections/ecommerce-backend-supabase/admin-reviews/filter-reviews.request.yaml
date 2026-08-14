@@ -1,0 +1,21 @@
+$kind: http-request
+url: localhost:3000/api/admin/reviews?moderation_status=published
+method: GET
+queryParams:
+  - key: rating
+    value: "4"
+    disabled: true
+  - key: page
+    value: "1"
+    disabled: true
+  - key: limit
+    value: "20"
+    disabled: true
+  - key: moderation_status
+    value: published
+auth:
+  type: bearer
+  credentials:
+    token: "{{json_web_token_05j7}}"
+settings: {}
+order: 1000

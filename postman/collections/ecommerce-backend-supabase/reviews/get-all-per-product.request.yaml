@@ -1,0 +1,20 @@
+$kind: http-request
+url: localhost:3000/api/reviews/products/1
+method: GET
+body:
+  type: text
+  content: "{\r
+
+    \  \"rating\": 0,\r
+
+    \  \"title\": \"Excellent phone\",\r
+
+    \  \"review\": \"Very happy with the purchase.\"\r
+
+    }"
+auth:
+  type: bearer
+  credentials:
+    token: "{{auth_secret_0pj8}}"
+settings: {}
+order: 2000

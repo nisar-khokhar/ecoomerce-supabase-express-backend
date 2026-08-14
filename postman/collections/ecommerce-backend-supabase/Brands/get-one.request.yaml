@@ -1,0 +1,5 @@
+$kind: http-request
+url: localhost:8000/api/brands/1
+method: GET
+settings: {}
+order: 2000

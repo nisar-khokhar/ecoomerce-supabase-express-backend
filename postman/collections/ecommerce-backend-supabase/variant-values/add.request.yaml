@@ -1,0 +1,18 @@
+$kind: http-request
+url: http://localhost:8000/api/variant-values
+method: POST
+headers:
+  Authorization: Bearer {{json_web_token_0c37}}
+body:
+  type: json
+  content: "{\r
+
+    \    \"variant_type_id\":999,\r
+
+    \    \"value_code\":\"green\",\r
+
+    \    \"label\":\"Green\"\r
+
+    }"
+settings: {}
+order: 1000

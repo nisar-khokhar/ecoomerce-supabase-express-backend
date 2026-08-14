@@ -1,0 +1,16 @@
+$kind: http-request
+url: localhost:8000/api/categories
+method: POST
+body:
+  type: json
+  content: "{\r
+
+    \    \"name\": \"Food & Drinks\",\r
+
+    \    \"slug\": \"FnD\"\r
+
+    \r
+
+    }"
+settings: {}
+order: 2000

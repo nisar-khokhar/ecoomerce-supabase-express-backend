@@ -1,0 +1,7 @@
+$kind: http-request
+url: http://localhost:8000/api/payments/orders/8
+method: POST
+headers:
+  Authorization: Bearer {{json_web_token_01g8}}
+settings: {}
+order: 1000

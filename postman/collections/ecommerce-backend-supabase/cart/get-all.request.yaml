@@ -1,0 +1,26 @@
+$kind: http-request
+url: localhost:8000/api/cart
+method: GET
+headers:
+  Authorization: Bearer {{json_web_token_01g8}}
+queryParams:
+  - key: category
+    value: "1"
+    disabled: true
+  - key: brand
+    value: "1"
+    disabled: true
+  - key: page
+    value: "1"
+    disabled: true
+  - key: limit
+    value: "1"
+    disabled: true
+  - key: featured
+    value: "true"
+    disabled: true
+body:
+  type: text
+  content: ""
+settings: {}
+order: 1000

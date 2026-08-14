@@ -1,0 +1,7 @@
+$kind: http-request
+url: localhost:8000/api/orders/8
+method: GET
+headers:
+  Authorization: Bearer {{json_web_token_0pj8}}
+settings: {}
+order: 2000

@@ -1,0 +1,26 @@
+$kind: http-request
+url: http://localhost:8000/api/addresses
+method: POST
+headers:
+  Authorization: Bearer {{json_web_token_0pj8}}
+body:
+  type: json
+  content: "{\r
+
+    \  \"label\": \"Home\",\r
+
+    \  \"recipient_name\": \"Client Nisar\",\r
+
+    \  \"phone\": \"03001234568\",\r
+
+    \  \"address_line_1\": \"Office Block A\",\r
+
+    \  \"city\": \"Lahore\",\r
+
+    \  \"province\": \"Punjab\",\r
+
+    \  \"country_code\": \"PK\"\r
+
+    }"
+settings: {}
+order: 1000

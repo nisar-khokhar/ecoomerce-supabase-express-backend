@@ -1,0 +1,9 @@
+$kind: http-request
+url: localhost:8000/api/refunds/orders/1/refund
+method: POST
+auth:
+  type: bearer
+  credentials:
+    token: "{{json_web_token_0bvm}}"
+settings: {}
+order: 1000

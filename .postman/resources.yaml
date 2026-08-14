@@ -1,0 +1,5 @@
+workspace:
+  id: ffaa66e4-f8d9-4b84-86c5-f04f40a7ac73
+cloudResources:
+  collections:
+    ../postman/collections/ecommerce-backend-supabase: 50588773-5221bbd6-2b0f-4c98-b031-faec9e6c307c

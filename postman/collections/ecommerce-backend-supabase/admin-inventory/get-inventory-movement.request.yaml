@@ -1,0 +1,11 @@
+$kind: http-request
+url: localhost:3000/api/admin/inventory/1/movements?type=restock
+method: GET
+queryParams:
+  type: restock
+auth:
+  type: bearer
+  credentials:
+    token: "{{supabase_service_role_api_key_10vf}}"
+settings: {}
+order: 4000

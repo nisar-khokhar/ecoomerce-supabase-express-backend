@@ -1,0 +1,21 @@
+$kind: http-request
+url: localhost:8000/api/products/6
+method: GET
+queryParams:
+  - key: category
+    value: "1"
+    disabled: true
+  - key: brand
+    value: "1"
+    disabled: true
+  - key: page
+    value: "1"
+    disabled: true
+  - key: limit
+    value: "1"
+    disabled: true
+  - key: featured
+    value: "true"
+    disabled: true
+settings: {}
+order: 2000

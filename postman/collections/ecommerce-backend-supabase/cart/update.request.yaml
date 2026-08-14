@@ -1,0 +1,10 @@
+$kind: http-request
+url: localhost:8000/api/cart/items/1
+method: PATCH
+headers:
+  Authorization: Bearer {{json_web_token_01g8}}
+body:
+  type: json
+  content: "{\r\n  \"quantity\": 1\r\n}"
+settings: {}
+order: 3000

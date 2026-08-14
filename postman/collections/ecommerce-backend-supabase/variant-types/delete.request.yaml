@@ -1,0 +1,10 @@
+$kind: http-request
+url: http://localhost:8000/api/variant-types/5
+method: DELETE
+headers:
+  Authorization: Bearer {{json_web_token_0c37}}
+body:
+  type: text
+  content: "{\r\n    \"name\": \"Color\"\r\n}"
+settings: {}
+order: 5000

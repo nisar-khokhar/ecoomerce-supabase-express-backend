@@ -1,0 +1,30 @@
+$kind: http-request
+url: localhost:8000/api/products/6
+method: PATCH
+headers:
+  Authorization: Bearer {{json_web_token_10a9}}
+queryParams:
+  - key: category
+    value: "1"
+    disabled: true
+  - key: brand
+    value: "1"
+    disabled: true
+  - key: page
+    value: "1"
+    disabled: true
+  - key: limit
+    value: "1"
+    disabled: true
+  - key: featured
+    value: "true"
+    disabled: true
+body:
+  type: json
+  content: "{\r
+
+    \  \"description\": \"The newest iPhone with A18 Pro chip.\"\r
+
+    }"
+settings: {}
+order: 4000

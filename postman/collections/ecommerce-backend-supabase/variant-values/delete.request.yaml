@@ -1,0 +1,18 @@
+$kind: http-request
+url: http://localhost:8000/api/variant-values/9
+method: DELETE
+headers:
+  Authorization: Bearer {{json_web_token_0c37}}
+body:
+  type: text
+  content: "{\r
+
+    \    \"variant_type_id\":999,\r
+
+    \    \"value_code\":\"green\",\r
+
+    \    \"label\":\"Green\"\r
+
+    }"
+settings: {}
+order: 3000

@@ -1,0 +1,62 @@
+$kind: collection
+name: ecommerce-backend-supabase
+description: ""
+variables:
+  - key: json_web_token_151s
+    secret: true
+  - key: auth_secret_05j7
+    secret: true
+  - key: json_web_token_0rj7
+    secret: true
+  - key: auth_secret_10vf
+    secret: true
+  - key: supabase_service_role_api_key_10vf
+    secret: true
+  - key: json_web_token_05j7
+    secret: true
+  - key: supabase_service_role_api_key_0671
+    secret: true
+  - key: auth_secret_0pj8
+    secret: true
+  - key: json_web_token_10vf
+    secret: true
+  - key: json_web_token_0ujz
+    secret: true
+  - key: json_web_token_0pj8
+    secret: true
+  - key: json_web_token_14oo
+    secret: true
+  - key: json_web_token_0bvm
+    secret: true
+  - key: json_web_token_01g8
+    secret: true
+  - key: json_web_token_0oxv
+    secret: true
+  - key: json_web_token_0c37
+    secret: true
+  - key: json_web_token_0rr8
+    secret: true
+  - key: json_web_token_0z2l
+    secret: true
+  - key: json_web_token_0sjd
+    secret: true
+  - key: json_web_token_10a9
+    secret: true
+  - key: json_web_token_0jix
+    secret: true
+  - key: bearer_token_134v
+    secret: true
+  - key: bearer_token_0qag
+    secret: true
+  - key: bearer_token_0i79
+    secret: true
+  - key: bearer_token_1b9f
+    secret: true
+  - key: bearer_token_0mjp
+    secret: true
+  - key: bearer_token_0dd4
+    secret: true
+  - key: bearer_token_18rc
+    secret: true
+  - key: bearer_token_18m0
+    secret: true

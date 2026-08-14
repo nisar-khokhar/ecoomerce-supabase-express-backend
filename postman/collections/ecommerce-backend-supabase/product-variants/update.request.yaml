@@ -1,0 +1,10 @@
+$kind: http-request
+url: http://localhost:8000 /api/product-variants/1
+method: PATCH
+headers:
+  Authorization: Bearer {{json_web_token_0oxv}}
+body:
+  type: json
+  content: "{\r\n    \"price\":425000\r\n}"
+settings: {}
+order: 2000

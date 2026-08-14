@@ -1,0 +1,18 @@
+$kind: http-request
+url: localhost:8000/api/refunds/orders/1/refund
+method: POST
+body:
+  type: json
+  content: "{\r
+
+    \  \"amount\": 100000,\r
+
+    \  \"reason\": \"Partial refund test.\"\r
+
+    }"
+auth:
+  type: bearer
+  credentials:
+    token: "{{json_web_token_14oo}}"
+settings: {}
+order: 2000

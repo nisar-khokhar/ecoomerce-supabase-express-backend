@@ -1,0 +1,12 @@
+$kind: http-request
+url: localhost:8000/api/reviews/1
+method: DELETE
+body:
+  type: text
+  content: ""
+auth:
+  type: bearer
+  credentials:
+    token: "{{json_web_token_0ujz}}"
+settings: {}
+order: 4000

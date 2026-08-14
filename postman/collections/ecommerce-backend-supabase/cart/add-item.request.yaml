@@ -1,0 +1,36 @@
+$kind: http-request
+url: localhost:8000/api/cart/items
+method: POST
+headers:
+  Authorization: Bearer {{json_web_token_0pj8}}
+queryParams:
+  - key: category
+    value: "1"
+    disabled: true
+  - key: brand
+    value: "1"
+    disabled: true
+  - key: page
+    value: "1"
+    disabled: true
+  - key: limit
+    value: "1"
+    disabled: true
+  - key: featured
+    value: "true"
+    disabled: true
+body:
+  type: json
+  content: "{\r
+
+    \  \"product_variant_id\": 2,\r
+
+    \  \"quantity\": 2\r
+
+    }"
+auth:
+  type: bearer
+  credentials:
+    token: "{{json_web_token_01g8}}"
+settings: {}
+order: 2000

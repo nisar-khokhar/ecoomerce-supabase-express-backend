@@ -1,0 +1,9 @@
+$kind: http-request
+url: http://localhost:8000/api/addresses/2/default
+method: PATCH
+auth:
+  type: bearer
+  credentials:
+    token: "{{json_web_token_0rr8}}"
+settings: {}
+order: 3000

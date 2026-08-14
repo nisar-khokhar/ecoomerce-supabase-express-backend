@@ -1,0 +1,32 @@
+$kind: http-request
+url: http://localhost:8000/api/addresses/1
+method: GET
+headers:
+  Authorization: Bearer {{json_web_token_0rr8}}
+body:
+  type: text
+  content: "{\r
+
+    \  \"label\": \"Home\",\r
+
+    \  \"recipient_name\": \"Malik Nisar\",\r
+
+    \  \"phone\": \"03001234567\",\r
+
+    \  \"address_line_1\": \"House 123, Street 4\",\r
+
+    \  \"address_line_2\": \"Near Main Market\",\r
+
+    \  \"city\": \"Lahore\",\r
+
+    \  \"province\": \"Punjab\",\r
+
+    \  \"postal_code\": \"54000\",\r
+
+    \  \"country_code\": \"PK\",\r
+
+    \  \"delivery_notes\": \"Call before delivery\"\r
+
+    }"
+settings: {}
+order: 2000

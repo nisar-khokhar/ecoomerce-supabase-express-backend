@@ -1,0 +1,38 @@
+$kind: http-request
+url: http://localhost:8000 /api/product-variants
+method: POST
+headers:
+  Authorization: Bearer {{json_web_token_0oxv}}
+body:
+  type: json
+  content: "{\r
+
+    \    \"product_id\":1,\r
+
+    \    \"sku\":\"IPH16-WHT-512\",\r
+
+    \    \"barcode\":\"8901234567891\",\r
+
+    \    \"price\":430000,\r
+
+    \    \"compare_price\":450000,\r
+
+    \    \"quantity\":10,\r
+
+    \    \"weight\":0.223,\r
+
+    \    \"track_inventory\":true,\r
+
+    \    \"is_active\":true,\r
+
+    \    \"variant_value_ids\":[\r
+
+    \        2,\r
+
+    \        5\r
+
+    \    ]\r
+
+    }"
+settings: {}
+order: 1000

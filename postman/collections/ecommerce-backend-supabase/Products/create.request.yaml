@@ -1,0 +1,50 @@
+$kind: http-request
+url: localhost:8000/api/products
+method: POST
+queryParams:
+  - key: category
+    value: "1"
+    disabled: true
+  - key: brand
+    value: "1"
+    disabled: true
+  - key: page
+    value: "1"
+    disabled: true
+  - key: limit
+    value: "1"
+    disabled: true
+  - key: featured
+    value: "true"
+    disabled: true
+body:
+  type: json
+  content: "{\r
+
+    \  \"name\": \"Test Product\",\r
+
+    \  \"slug\": \"test-product\",\r
+
+    \  \"category_id\": 1,\r
+
+    \  \"brand_id\": 1,\r
+
+    \  \"variants\": [\r
+
+    \    {\r
+
+    \      \"sku\": \"TEST-BLK-256\",\r
+
+    \      \"price\": 1000,\r
+
+    \      \"quantity\": 10,\r
+
+    \      \"variant_value_ids\": [1, 6]\r
+
+    \    }\r
+
+    \  ]\r
+
+    }"
+settings: {}
+order: 3000
