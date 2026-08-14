@@ -1,5 +1,6 @@
 const supabase = require("../config/supabase");
 const { refundOrder } = require("./payment.service");
+const couponService = require("./coupon.service");
 
 // ============================================
 // Get User Address
@@ -213,7 +214,7 @@ const generateOrderNumber = () => {
 // ============================================
 
 const createOrder = async (userId, orderData) => {
-  const { shipping_address_id, billing_address_id } = orderData;
+  const { shipping_address_id, billing_address_id, coupon_code } = orderData;
 
   // Get cart
   const cart = await getCart(userId);
@@ -231,8 +232,21 @@ const createOrder = async (userId, orderData) => {
   const { subtotal, orderItems } = await validateCart(cart);
 
   const shippingFee = 0;
-  const discountAmount = 0;
   const taxAmount = 0;
+
+  let discountAmount = 0;
+  let couponId = null;
+
+  if (coupon_code) {
+    const couponResult = await couponService.validateCoupon({
+      userId,
+      code: coupon_code,
+    });
+
+    discountAmount = couponResult.discount_amount;
+
+    couponId = couponResult.coupon.id;
+  }
 
   const totalAmount = subtotal + shippingFee - discountAmount + taxAmount;
 
@@ -261,6 +275,8 @@ const createOrder = async (userId, orderData) => {
       tax_amount: taxAmount,
 
       total_amount: totalAmount,
+
+      coupon_id: couponId,
     })
     .select()
     .single();
@@ -303,6 +319,7 @@ const getOrderById = async (userId, orderId) => {
       order_number,
       status,
       payment_status,
+      coupon_id,
 
       shipping_address,
       billing_address,

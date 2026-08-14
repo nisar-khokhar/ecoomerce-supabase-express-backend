@@ -3,6 +3,8 @@ const supabase = require("../config/supabase");
 const stripeProvider = require("./payments/stripe.provider");
 const xpayProvider = require("./payments/xpay.provider");
 
+const couponService = require("./coupon.service");
+
 // ============================================
 // Payment Providers
 // ============================================
@@ -490,6 +492,14 @@ const handleStripePaymentSucceeded = async (paymentIntent) => {
   await fulfillPaidOrder(payment.order_id, payment.id);
 
   console.log(`Order ${payment.order_id} fulfilled successfully.`);
+
+  // ==========================================
+  // Record Coupon Usage
+  // ==========================================
+
+  await couponService.recordCouponUsage(payment.order_id);
+
+  console.log(`Coupon usage processed for order ${payment.order_id}.`);
 };
 
 // ============================================

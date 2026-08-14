@@ -13,6 +13,9 @@ var express = require("express");
 var path = require("path");
 var cookieParser = require("cookie-parser");
 var logger = require("morgan");
+
+const helmet = require("helmet");
+const cors = require("cors");
 const errorHandler = require("./middlewares/errorHandler");
 
 /**
@@ -46,10 +49,21 @@ const adminReviewRoutes = require("./routes/admin-review.routes");
 const adminInventoryRoutes = require("./routes/admin-inventory.routes");
 const adminDashboardRoutes = require("./routes/admin-dashboard.routes");
 const adminSalesAnalyticsRoutes = require("./routes/admin-sales-analytics.routes");
+const couponRoutes = require("./routes/coupon.routes");
+const adminReportsRoutes = require("./routes/admin-reports.routes");
 
 const paymentWebhookRoutes = require("./routes/paymentWebhook.routes");
 
 var app = express();
+app.use(helmet());
+
+app.use(
+  cors({
+    origin: process.env.FRONTEND_URL || false,
+    credentials: true,
+  }),
+);
+
 app.use("/api/payments/webhook", paymentWebhookRoutes);
 
 /**
@@ -62,13 +76,13 @@ app.use(logger("dev"));
  * This middleware parses incoming JSON request bodies.
  *
  */
-app.use(express.json());
+app.use(express.json({ limit: "1mb" }));
 
 /**
  * This parses data submitted from HTML forms.
  *
  */
-app.use(express.urlencoded({ extended: false }));
+app.use(express.urlencoded({ extended: false, limit: "100kb" }));
 
 /**
  * parses cookies attached to the client request object and makes them available under req.cookies.
@@ -102,18 +116,25 @@ app.use("/api/admin/reviews", adminReviewRoutes);
 app.use("/api/admin/inventory", adminInventoryRoutes);
 app.use("/api/admin/dashboard", adminDashboardRoutes);
 app.use("/api/admin/analytics", adminSalesAnalyticsRoutes);
+app.use("/api/admin/coupons", couponRoutes);
+app.use("/api/admin/reports", adminReportsRoutes);
 
-// catch 404 and forward to error handler
-app.use(errorHandler);
+// ============================================
+// 404 Handler
+// ============================================
 
-// error handler
-app.use(function (err, req, res, next) {
-  res.status(err.status || 500);
+app.use((req, res, next) => {
+  const error = new Error("Route not found.");
+  error.status = 404;
 
-  res.json({
-    success: false,
-    message: err.message,
-  });
+  next(error);
 });
 
+// ============================================
+// Global Error Handler
+// ============================================
+
+app.use(errorHandler);
+
 module.exports = app;
+//cross-env NODE_ENV=development

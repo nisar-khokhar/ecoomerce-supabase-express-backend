@@ -10,6 +10,14 @@ const createOrderSchema = z.object({
     shipping_address_id: idSchema,
 
     billing_address_id: idSchema.optional(),
+
+    coupon_code: z
+      .string()
+      .trim()
+      .min(1)
+      .max(50)
+      .transform((value) => value.toUpperCase())
+      .optional(),
   }),
 });
 
