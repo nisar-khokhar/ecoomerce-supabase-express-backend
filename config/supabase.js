@@ -1,3 +1,11 @@
+/*
+ * Copyright (c) 2026 Malik Nisar Khokhar
+ * Author: Malik Nisar Khokhar
+ * Email: khokharmaliknisar@gmail.com
+ * Project: Node Express CRUD
+ * All rights reserved.
+ */
+
 const { createClient } = require("@supabase/supabase-js");
 
 // Prefer the service role key for server-side operations (webhooks, admin tasks).

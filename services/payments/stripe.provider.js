@@ -1,3 +1,11 @@
+/*
+ * Copyright (c) 2026 Malik Nisar Khokhar
+ * Author: Malik Nisar Khokhar
+ * Email: khokharmaliknisar@gmail.com
+ * Project: Node Express CRUD
+ * All rights reserved.
+ */
+
 const Stripe = require("stripe");
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);

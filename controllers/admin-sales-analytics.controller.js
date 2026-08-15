@@ -1,3 +1,11 @@
+/*
+ * Copyright (c) 2026 Malik Nisar Khokhar
+ * Author: Malik Nisar Khokhar
+ * Email: khokharmaliknisar@gmail.com
+ * Project: Node Express CRUD
+ * All rights reserved.
+ */
+
 const asyncHandler = require("../middlewares/asyncHandler");
 
 const adminSalesAnalyticsService = require("../services/admin-sales-analytics.service");

@@ -1,4 +1,12 @@
 /*
+ * Copyright (c) 2026 Malik Nisar Khokhar
+ * Author: Malik Nisar Khokhar
+ * Email: khokharmaliknisar@gmail.com
+ * Project: Node Express CRUD
+ * All rights reserved.
+ */
+
+/*
 
 * Author: Malik Nisar Jamil
 * Email: khokharmaliknisar@gmail.com
